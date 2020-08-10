@@ -1,0 +1,16 @@
+---
+Checks: '*,
+-fuchsia-*,
+-google-*,
+-zircon-*,
+-abseil-*,
+-modernize-use-trailing-return-type,
+-llvm-*,
+-cppcoreguidelines-pro-type-vararg,
+-hicpp-vararg,
+-misc-non-private-member-variables-in-classes,
+-cppcoreguidelines-pro-bounds-pointer-arithmetic,
+-cppcoreguidelines-avoid-magic-numbers,
+-readability-magic-numbers,
+'
+HeaderFilterRegex: '.*'

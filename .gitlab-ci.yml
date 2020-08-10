@@ -1,0 +1,99 @@
+# @file      .gitlab-ci.yml
+# @author    Ignacio Vizzo     [ivizzo@uni-bonn.de]
+#
+# Copyright (c) 2019 Ignacio Vizzo, all rights reserved
+#
+# Use this file wisely: You can add more stuff on it if you want. This template
+# will allow you to build your project every time you push changes to the git
+# server. If you have any error the gitlab server will send you a notification
+# to your email.
+# You could also provide tests to your project and add a testing
+# stage for the CI, this will allow you to run tests for every change you make
+# in the code. This is the defacto standard in industry nowadays. Ask google for
+# more information if you are curious.
+
+# Template for all jobs
+default:
+  image: some.url.of.yours
+  artifacts:
+    expire_in: 1 h
+    untracked: true
+    paths:
+      - build/
+  before_script:
+    - export TERM=xterm
+    - export SHELL=/bin/bash
+  tags:
+    - docker
+
+stages:
+  - configure
+  - analyse
+  - build
+  - test
+  - deploy
+
+configure:
+  stage: configure
+  script:
+    - cmake -Bbuild/ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release
+
+clang-format:
+  stage: analyse
+  dependencies:
+    - configure
+  allow_failure: true
+  script:
+    - cd build/
+    - make clang-format
+
+clang-tidy:
+  stage: analyse
+  allow_failure: true
+  dependencies:
+    - configure
+  script:
+    - cd build/
+    - make clang-tidy
+
+build:
+  stage: build
+  dependencies:
+    - configure
+  script:
+    - cd build/
+    - make -j$(nproc --all) all
+
+test:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - cd build/
+    - ctest -vv
+
+coverage:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - cd build/
+    - cmake -DENABLE_COVERAGE=ON ..
+    - make clean
+    - make -j$(nproc --all) all
+    - make test-coverage
+  coverage: '/TOTAL.*\s+(\S+\%)/'
+
+deploy:
+  stage: deploy
+  dependencies:
+    - build
+  script:
+    - echo "Build succeeded, archiving artifacts..."
+    - cd build/
+    - make -j$(nproc --all) install
+  artifacts:
+    name: bow_artifacts
+    expire_in: 1 week
+    paths:
+      - results/
